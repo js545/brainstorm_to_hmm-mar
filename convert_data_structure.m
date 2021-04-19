@@ -14,8 +14,6 @@ theFiles = dir(filePattern);
 n_scout = 68;
 % Number of timepoints per window
 n_timepoints = 4000; 
-% Calculate number of epochs in sample
-n_epochs = size(ts,1) / n_scout;
 
 %% Loop through files to convert and save
 for k = 1 : length(theFiles)
@@ -26,6 +24,9 @@ for k = 1 : length(theFiles)
     
     df = load(fullFileName);
     ts = df.Value;
+    
+    % Calculate number of epochs in sample
+    n_epochs = size(ts,1) / n_scout;
     
     d_full = [];
     
