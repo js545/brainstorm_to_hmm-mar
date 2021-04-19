@@ -24,10 +24,22 @@ for k = 1 : length(theFiles)
     df = load(fullFileName);
     ts = df.Value;
     
+    d_full = [];
+    
+    for i = 1:n_epochs
+       
+        d_temp = ts(((i-1)*n_scout + 1):(i*n_scout), 1:n_timepoints)';
+        d_full = [d_full; d_temp];
+        
+    end
+    
+    outFileName = fullfile('E:/Results/T2D_Resting_State_Results/Scout_TS/converted_TS/', baseFileName);
+    save(outFileName, 'd_full')
+    
 end
 
 
-
+%% Misc
 % Load data / timeseries
 df = load('E:/Results/T2D_Resting_State_Results/Scout_TS/006c_DK_scout_timeseries_epochs_removed.mat');
 ts = df.Value;
