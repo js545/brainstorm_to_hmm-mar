@@ -1,3 +1,17 @@
+% Specify the folder where the files live.
+myFolder = 'E:/Results/T2D_Resting_State_Results/Scout_TS/';
+
+% Get a list of all files in the folder with the desired file name pattern.
+filePattern = fullfile(myFolder, '*.mat'); % Change to whatever pattern you need.
+theFiles = dir(filePattern);
+for k = 1 : length(theFiles)
+    baseFileName = theFiles(k).name;
+    fullFileName = fullfile(theFiles(k).folder, baseFileName);
+    fprintf(1, 'Now reading %s\n', fullFileName);
+end
+
+
+
 % Load data / timeseries
 df = load('E:/Results/T2D_Resting_State_Results/Scout_TS/006c_DK_scout_timeseries_epochs_removed.mat');
 ts = df.Value;
@@ -17,3 +31,5 @@ for i = 1:n_epochs
     d_full = [d_full; d_temp];
     
 end
+
+save('E:\Results\T2D_Resting_State_Results\Scout_TS\converted.mat', 'd_full');
