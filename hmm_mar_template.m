@@ -1,19 +1,3 @@
-%% Working from raw fif files
-
-% data1 = ft_read_data('/home/nebmeg/Documents/HMM_T2DM_Data/006c_ecr_raw_tsss_mc.fif');
-% data1 = data1';
-% data2 = ft_read_data('/home/nebmeg/Documents/HMM_T2DM_Data/010c_ecr_raw_tsss_mc.fif');
-% data2 = data2';
-% 
-% data_concatenate = cat(1, data1, data2);
-% T = [size(data1, 1), size(data2, 1)];
-% 
-% options = struct();
-% options.K = 5;
-% 
-% hmmmar(data_concatenate, T, options)
-
-
 %% Working from Brainstorm timeseries outputs
 
 % Loading in files
@@ -23,7 +7,7 @@ theFiles = dir(filePattern);
 
 ts_concat = [];
 
-for k=1:length(theFiles)
+for k=1:5 %length(theFiles)
    
     baseFileName = theFiles(k).name;
     fullFileName = fullfile(theFiles(k).folder, baseFileName);
@@ -36,29 +20,22 @@ for k=1:length(theFiles)
     
 end
 
+% Downsample
+ts_concat = ts_concat(1:4:end, :);
+Fs = 250; %Sampling frequency
+
+
+% % Select data subset just for training / testing
+% ts_concat = ts_concat(1:80000, 1:3);
+
+n_samples_per_epoch = 1000; % 1000 if downsampled to 250Hz, 4000 if not
+T = n_samples_per_epoch * ones(size(ts_concat,1)/n_samples_per_epoch,1);
+
+% Initialize options for hmm
 K=10; %Number of states
-Fs = 1000; %Sampling frequency
-
-% %%
-% % Load multiple datasets
-% data = load('/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/006c_DK_scout_timeseries_epochs_removed');
-% data2 = load('/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/010c_DK_scout_timeseries_epochs_removed');
-% % Invert Brainstorm format to match HMM-MAR
-% timeseries = data.d_full;
-% timeseries2 = data2.d_full;
-% 
-% % Concatenate datasets
-% 
-% ts_concat = cat(1, timeseries, timeseries2);
-% 
-% % % Select data subset just for training / testing
-% % ts_concat = ts_concat(1:80000, 1:3);
-
-%T = size(timeseries, 1);
-T = 4000 * ones(size(ts_concat,1)/4000,1);
-
 options = struct();
 options.K = K;
+options.order = 0;
 
 [hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
 
