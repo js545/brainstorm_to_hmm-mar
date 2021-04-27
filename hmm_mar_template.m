@@ -17,37 +17,50 @@
 %% Working from Brainstorm timeseries outputs
 
 % Loading in files
-myFolder = '/home/nebmeg/Documents/HMM_T2DM_Data/';
+myFolder = '/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/';
 filePattern = fullfile(myFolder, '*.mat');
 theFiles = dir(filePattern);
+
+ts_concat = [];
+
+for k=1:length(theFiles)
+   
+    baseFileName = theFiles(k).name;
+    fullFileName = fullfile(theFiles(k).folder, baseFileName);
+    fprintf(1, 'Now reading %s\n', fullFileName);
+    
+    df = load(fullFileName);
+    ts = df.d_full;
+    
+    ts_concat = cat(1, ts_concat, ts);
+    
+end
 
 K=10; %Number of states
 Fs = 1000; %Sampling frequency
 
-% Load multiple datasets using Brainstorm interface
-
-% Load multiple datasets
-data = load('/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/006c_DK_scout_timeseries_epochs_removed');
-data2 = load('/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/010c_DK_scout_timeseries_epochs_removed');
-% Invert Brainstorm format to match HMM-MAR
-timeseries = data.d_full;
-timeseries2 = data2.d_full;
-
-% Concatenate datasets
-
-timeseries = cat(1, timeseries, timeseries2);
-
-% Select data subset just for training / testing
-timeseries = timeseries(1:80000, 1:3);
-
+% %%
+% % Load multiple datasets
+% data = load('/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/006c_DK_scout_timeseries_epochs_removed');
+% data2 = load('/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/010c_DK_scout_timeseries_epochs_removed');
+% % Invert Brainstorm format to match HMM-MAR
+% timeseries = data.d_full;
+% timeseries2 = data2.d_full;
+% 
+% % Concatenate datasets
+% 
+% ts_concat = cat(1, timeseries, timeseries2);
+% 
+% % % Select data subset just for training / testing
+% % ts_concat = ts_concat(1:80000, 1:3);
 
 %T = size(timeseries, 1);
-T = 4000 * ones(size(timeseries,1)/4000,1);
+T = 4000 * ones(size(ts_concat,1)/4000,1);
 
 options = struct();
 options.K = K;
 
-[hmm, Gamma, Xi, vpath] = hmmmar(timeseries, T, options);
+[hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
 
 %% Visualize Output
 
