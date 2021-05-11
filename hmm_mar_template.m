@@ -7,7 +7,7 @@ theFiles = dir(filePattern);
 
 ts_concat = [];
 
-for k=1:5 %length(theFiles)
+for k=1:length(theFiles)
    
     baseFileName = theFiles(k).name;
     fullFileName = fullfile(theFiles(k).folder, baseFileName);
@@ -39,6 +39,25 @@ options.order = 0;
 
 [hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
 
+% Explained variance?
+explained_var = explainedvar_PCA(ts_concat, T_all, options);
+
+%% Test TDE Options
+
+% Initialize options for hmm
+K=12; %Number of states
+options = struct();
+options.K = K;
+options.Fs = 250;
+options.order = 0;
+options.zeromean = 1;
+options.embeddedlags = -7:7;
+options.pca = size(ts_concat, 2)*2;
+options.standardise = 1;
+options.standardise_pc = options.standardise;
+
+[hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
+
 %% Visualize Output
 
 subplot(2,1,1)
@@ -59,7 +78,7 @@ options_mt.p = 0;
 options_mt.win = 500;
 options_mt.order = 2;
 
-spectral_info = hmmspectramt(timeseriess,T,Gamma,options_mt);
+spectral_info = hmmspectramt(ts_concat,T,Gamma,options_mt);
 
 plot_hmmspectra(spectral_info);
 
