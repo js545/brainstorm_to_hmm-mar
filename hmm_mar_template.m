@@ -1,5 +1,7 @@
 %% Working from Brainstorm timeseries outputs
 
+addpath(genpath('/home/nebmeg/Documents/osl/HMM-MAR'))
+
 % Loading in files
 myFolder = '/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/';
 filePattern = fullfile(myFolder, '*.mat');
@@ -31,7 +33,7 @@ Fs = 250; %Sampling frequency
 n_samples_per_epoch = 1000; % 1000 if downsampled to 250Hz, 4000 if not
 T = n_samples_per_epoch * ones(size(ts_concat,1)/n_samples_per_epoch,1);
 
-% Initialize options for hmm
+%% Test MAR Options
 K=10; %Number of states
 options = struct();
 options.K = K;
@@ -44,19 +46,34 @@ explained_var = explainedvar_PCA(ts_concat, T_all, options);
 
 %% Test TDE Options
 
-% Initialize options for hmm
-K=12; %Number of states
+% Initialize options for TDE hmm
+K=4; %Number of states
 options = struct();
 options.K = K;
 options.Fs = 250;
 options.order = 0;
+options.verbose = 1;
 options.zeromean = 1;
-options.embeddedlags = -7:7;
+
+lag=2;
+options.embeddedlags = -lag:lag;
 options.pca = size(ts_concat, 2)*2;
+%options.pca = size(ts_concat, 2);
 options.standardise = 1;
 options.standardise_pc = options.standardise;
 
 [hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
+
+%% State Dynamic Measures
+
+FO = getFractionalOccupancy (Gamma,T,hmm.train); % state fractional occupancies per session
+LifeTimes = getStateLifeTimes (Gamma,T,hmm.train); % state life times
+Intervals = getStateIntervalTimes (Gamma,T,hmm.train); % interval times between state visits
+SwitchingRate =  getSwitchingRate(Gamma,T,hmm.train); % rate of switching between stats
+
+outputfile = '/home/nebmeg/Documents/brainstorm_to_hmm-mar/outputs/k4_lag2_pcadouble.mat';
+
+save(outputfile,'LifeTimes','Intervals','FO','SwitchingRate')
 
 %% Visualize Output
 
@@ -81,11 +98,4 @@ options_mt.order = 2;
 spectral_info = hmmspectramt(ts_concat,T,Gamma,options_mt);
 
 plot_hmmspectra(spectral_info);
-
-%% State Dynamic Measures
-
-FO = getFractionalOccupancy (Gamma,T,hmm.train); % state fractional occupancies per session
-LifeTimes = getStateLifeTimes (Gamma,T,hmm.train); % state life times
-Intervals = getStateIntervalTimes (Gamma,T,hmm.train); % interval times between state visits
-SwitchingRate =  getSwitchingRate(Gamma,T,hmm.train); % rate of switching between stats
 
