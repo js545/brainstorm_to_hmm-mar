@@ -33,34 +33,52 @@ Fs = 250; %Sampling frequency
 n_samples_per_epoch = 1000; % 1000 if downsampled to 250Hz, 4000 if not
 T = n_samples_per_epoch * ones(size(ts_concat,1)/n_samples_per_epoch,1);
 
-%% Test MAR Options
-K=10; %Number of states
-options = struct();
-options.K = K;
-options.order = 0;
-
-[hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
-
-% Explained variance?
-explained_var = explainedvar_PCA(ts_concat, T_all, options);
+% %% Test MAR Options
+% K=10; %Number of states
+% options = struct();
+% options.K = K;
+% options.order = 0;
+% 
+% [hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
+% 
+% % Explained variance?
+% explained_var = explainedvar_PCA(ts_concat, T_all, options);
 
 %% Test TDE Options
 
 % Initialize options for TDE hmm
-K=4; %Number of states
-options = struct();
+% K=4; %Number of states
+% options = struct();
 options.K = K;
 options.Fs = 250;
 options.order = 0;
 options.verbose = 1;
 options.zeromean = 1;
 
-lag=2;
-options.embeddedlags = -lag:lag;
-options.pca = size(ts_concat, 2)*2;
-%options.pca = size(ts_concat, 2);
+% lag=2;
+% options.embeddedlags = -lag:lag;
+% options.pca = size(ts_concat, 2)*2;
+options.pca = size(ts_concat, 2);
 options.standardise = 1;
 options.standardise_pc = options.standardise;
+
+for K= 3:6
+    for lag = 2:5
+        
+        options.K = K;
+        options.embeddedlags = -lag:lag;
+        savename = '/home/nebmeg/Documents/brainstorm_to_hmm-mar/outputs/k' + string(K) + '_lag' + string(lag) + '_pcasingle.mat';
+        [hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
+        
+        FO = getFractionalOccupancy (Gamma,T,hmm.train); % state fractional occupancies per session
+        LifeTimes = getStateLifeTimes (Gamma,T,hmm.train); % state life times
+        Intervals = getStateIntervalTimes (Gamma,T,hmm.train); % interval times between state visits
+        SwitchingRate =  getSwitchingRate(Gamma,T,hmm.train); % rate of switching between stats
+
+        save(savename,'LifeTimes','Intervals','FO','SwitchingRate')
+        
+    end
+end
 
 [hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
 
