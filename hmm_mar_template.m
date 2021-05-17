@@ -8,6 +8,7 @@ filePattern = fullfile(myFolder, '*.mat');
 theFiles = dir(filePattern);
 
 ts_concat = [];
+T = [];
 
 for k=1:length(theFiles)
    
@@ -18,20 +19,24 @@ for k=1:length(theFiles)
     df = load(fullFileName);
     ts = df.d_full;
     
+    % Downsample
+    ts = ts(1:4:end, :);
+    
     ts_concat = cat(1, ts_concat, ts);
+    T = cat(1, T, size(ts,1)/4);
     
 end
 
-% Downsample
-ts_concat = ts_concat(1:4:end, :);
-Fs = 250; %Sampling frequency
+% % Downsample
+% ts_concat = ts_concat(1:4:end, :);
+% Fs = 250; %Sampling frequency
 
 
 % % Select data subset just for training / testing
 % ts_concat = ts_concat(1:80000, 1:3);
 
-n_samples_per_epoch = 1000; % 1000 if downsampled to 250Hz, 4000 if not
-T = n_samples_per_epoch * ones(size(ts_concat,1)/n_samples_per_epoch,1);
+% n_samples_per_epoch = 1000; % 1000 if downsampled to 250Hz, 4000 if not
+% T = n_samples_per_epoch * ones(size(ts_concat,1)/n_samples_per_epoch,1);
 
 % %% Test MAR Options
 % K=10; %Number of states
@@ -49,7 +54,7 @@ T = n_samples_per_epoch * ones(size(ts_concat,1)/n_samples_per_epoch,1);
 % Initialize options for TDE hmm
 % K=4; %Number of states
 % options = struct();
-options.K = K;
+% options.K = K;
 options.Fs = 250;
 options.order = 0;
 options.verbose = 1;
@@ -63,7 +68,7 @@ options.standardise = 1;
 options.standardise_pc = options.standardise;
 
 for K= 3:6
-    for lag = 2:5
+    for lag = 4:5
         
         options.K = K;
         options.embeddedlags = -lag:lag;
@@ -79,8 +84,6 @@ for K= 3:6
         
     end
 end
-
-[hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
 
 %% State Dynamic Measures
 
