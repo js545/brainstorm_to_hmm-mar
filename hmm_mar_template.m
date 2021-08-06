@@ -1,16 +1,21 @@
 %% Working from Brainstorm timeseries outputs
 
-addpath(genpath('/home/nebmeg/Documents/osl/HMM-MAR'))
+% addpath(genpath('/home/nebmeg/Documents/osl/HMM-MAR'))
+addpath(genpath('/home/nebmeg/matlab_external_packages/HMM-MAR'))
 
 % Loading in files
-myFolder = '/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/';
+% myFolder = '/home/nebmeg/Documents/HMM_T2DM_Data/timeseries/converted/';
+myFolder = '/home/nebmeg/Data/T2D_RS_Markov/Data/Controls/';
 filePattern = fullfile(myFolder, '*.mat');
 theFiles = dir(filePattern);
 
-ts_concat = [];
-T = [];
+T_bad_epoch_index = load('/home/nebmeg/Downloads/bad_epochs_index.mat').T_cell;
 
-for k=1:length(theFiles)
+ts_concat = [];
+ts_concat_cell = {};
+T_cell = {};
+
+for k=1:5
    
     baseFileName = theFiles(k).name;
     fullFileName = fullfile(theFiles(k).folder, baseFileName);
@@ -23,7 +28,32 @@ for k=1:length(theFiles)
     ts = ts(1:4:end, :);
     
     ts_concat = cat(1, ts_concat, ts);
-    T = cat(1, T, size(ts,1)/4);
+    ts_concat_cell{k, 1} = ts;
+    
+    T_temp = [];
+    
+    for i = 1:length(T_bad_epoch_index{k})
+        
+        if i == 1
+            
+            T_temp(i) = (T_bad_epoch_index{k}(i) - 1) * 1000;
+
+        else
+
+            T_temp(i) = ((T_bad_epoch_index{k}(i) - T_bad_epoch_index{k}(i-1))-1) * 1000;
+
+        end
+        
+    end
+    
+    if sum(T_temp) < length(ts)
+        
+        T_temp(i+1) = length(ts) - sum(T_temp);
+        
+    end
+    
+    T_temp = nonzeros(T_temp);
+    T_cell{k,1} = reshape(T_temp, 1, length(T_temp));
     
 end
 
@@ -59,26 +89,33 @@ options.Fs = 250;
 options.order = 0;
 options.verbose = 1;
 options.zeromean = 1;
+options.covtype='full';
 
 % lag=2;
 % options.embeddedlags = -lag:lag;
-% options.pca = size(ts_concat, 2)*2;
-options.pca = size(ts_concat, 2);
+options.pca = size(ts_concat, 2)*2;
+% options.pca = size(ts_concat, 2);
 options.standardise = 1;
 options.standardise_pc = options.standardise;
+ 
+options.BIGNbatch = 5;
+% options.leakagecorr = -1;
+options.useParallel = 0;
 
 for K= 3:6
-    for lag = 4:5
+    for lag = 3:7
         
+        fprintf(1, 'Now analyzing K=%d states with lag of %d\n', K, lag);
+
         options.K = K;
         options.embeddedlags = -lag:lag;
-        savename = '/home/nebmeg/Documents/brainstorm_to_hmm-mar/outputs/k' + string(K) + '_lag' + string(lag) + '_pcasingle.mat';
-        [hmm, Gamma, Xi, vpath] = hmmmar(ts_concat, T, options);
+        savename = '/home/nebmeg/Data/T2D_RS_Markov/Outputs/k' + string(K) + '_lag' + string(lag) + '_pca_single.mat';
+        [hmm, Gamma, Xi, vpath] = hmmmar(ts_concat_cell, T_cell, options);
         
-        FO = getFractionalOccupancy (Gamma,T,hmm.train); % state fractional occupancies per session
-        LifeTimes = getStateLifeTimes (Gamma,T,hmm.train); % state life times
-        Intervals = getStateIntervalTimes (Gamma,T,hmm.train); % interval times between state visits
-        SwitchingRate =  getSwitchingRate(Gamma,T,hmm.train); % rate of switching between stats
+        FO = getFractionalOccupancy (Gamma,T_cell,hmm.train); % state fractional occupancies per session
+        LifeTimes = getStateLifeTimes (Gamma,T_cell,hmm.train); % state life times
+        Intervals = getStateIntervalTimes (Gamma,T_cell,hmm.train); % interval times between state visits
+        SwitchingRate =  getSwitchingRate(Gamma,T_cell,hmm.train); % rate of switching between stats
 
         save(savename,'LifeTimes','Intervals','FO','SwitchingRate')
         
@@ -92,7 +129,7 @@ LifeTimes = getStateLifeTimes (Gamma,T,hmm.train); % state life times
 Intervals = getStateIntervalTimes (Gamma,T,hmm.train); % interval times between state visits
 SwitchingRate =  getSwitchingRate(Gamma,T,hmm.train); % rate of switching between stats
 
-outputfile = '/home/nebmeg/Documents/brainstorm_to_hmm-mar/outputs/k4_lag2_pcadouble.mat';
+outputfile = '/home/nebmeg/Data//Outputs/k4_lag2_pcadouble.mat';
 
 save(outputfile,'LifeTimes','Intervals','FO','SwitchingRate')
 
